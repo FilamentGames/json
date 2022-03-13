@@ -321,6 +321,18 @@ impl<'de, R: Read<'de>> Deserializer<R> {
         };
 
         let value = match peek {
+            b'"' => {
+                self.eat_char();
+                self.scratch.clear();
+                let value = self.read.parse_str(&mut self.scratch)?;
+
+                match &*value {
+                    "NaN" => return visitor.visit_f64(f64::NAN),
+                    "Infinity" => return visitor.visit_f64(f64::INFINITY),
+                    "-Infinity" => return visitor.visit_f64(f64::NEG_INFINITY),
+                    _ => return Err(self.error(ErrorCode::InvalidNumber)),
+                };
+            }
             b'-' => {
                 self.eat_char();
                 tri!(self.parse_integer(false)).visit(visitor)
@@ -434,18 +446,6 @@ impl<'de, R: Read<'de>> Deserializer<R> {
 
     fn parse_number(&mut self, positive: bool, significand: u64) -> Result<ParserNumber> {
         Ok(match tri!(self.peek_or_null()) {
-            b'"' => {
-                self.eat_char();
-                self.scratch.clear();
-                let value = self.read.parse_str(&mut self.scratch)?;
-
-                match &*value {
-                    "NaN" => return visitor.visit_f64(f64::NAN),
-                    "Infinity" => return visitor.visit_f64(f64::INFINITY),
-                    "-Infinity" => return visitor.visit_f64(f64::NEG_INFINITY),
-                    _ => return Err(self.error(ErrorCode::InvalidNumber)),
-                };
-            }
             b'.' => ParserNumber::F64(tri!(self.parse_decimal(positive, significand, 0))),
             b'e' | b'E' => ParserNumber::F64(tri!(self.parse_exponent(positive, significand, 0))),
             _ => {
