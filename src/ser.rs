@@ -173,11 +173,24 @@ where
     #[inline]
     fn serialize_f32(self, value: f32) -> Result<()> {
         match value.classify() {
-            FpCategory::Nan | FpCategory::Infinite => {
+            FpCategory::Nan => {
                 tri!(self
                     .formatter
-                    .write_null(&mut self.writer)
+                    .write_string_fragment(&mut self.writer, "NaN")
                     .map_err(Error::io));
+            }
+            FpCategory::Infinite => {
+                if value == f32::INFINITY {
+                    tri!(self
+                        .formatter
+                        .write_string_fragment(&mut self.writer, "Infinity")
+                        .map_err(Error::io));
+                } else {
+                    tri!(self
+                        .formatter
+                        .write_string_fragment(&mut self.writer, "-Infinity")
+                        .map_err(Error::io));
+                }
             }
             _ => {
                 tri!(self
@@ -192,11 +205,24 @@ where
     #[inline]
     fn serialize_f64(self, value: f64) -> Result<()> {
         match value.classify() {
-            FpCategory::Nan | FpCategory::Infinite => {
+            FpCategory::Nan => {
                 tri!(self
                     .formatter
-                    .write_null(&mut self.writer)
+                    .write_string_fragment(&mut self.writer, "NaN")
                     .map_err(Error::io));
+            }
+            FpCategory::Infinite => {
+                if value == f64::INFINITY {
+                    tri!(self
+                        .formatter
+                        .write_string_fragment(&mut self.writer, "Infinity")
+                        .map_err(Error::io));
+                } else {
+                    tri!(self
+                        .formatter
+                        .write_string_fragment(&mut self.writer, "-Infinity")
+                        .map_err(Error::io));
+                }
             }
             _ => {
                 tri!(self
